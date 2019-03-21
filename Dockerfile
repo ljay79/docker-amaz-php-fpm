@@ -41,9 +41,9 @@ RUN set -x \
     else \
       usermod -d /var/www -c nginx -l nginx apache ; \
       groupmod -n nginx apache ; \
-      usermod -u 1000 nginx ; \
-      groupmod -g 1000 nginx ; \
     fi \
+    && usermod -u 1000 nginx  > /dev/null \
+    && groupmod -g 1000 nginx  > /dev/null \
     && chown nginx /var/run/php-fpm
 
 RUN set -ex \
