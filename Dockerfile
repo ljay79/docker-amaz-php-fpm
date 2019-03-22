@@ -30,26 +30,8 @@ RUN echo "" >> /etc/sysconfig/network
 # cleanup
 RUN yum clean all && rm -rf /tmp/* /var/tmp/*
 
-# amazon creates php-fpm as user/group apache
-# For compatibility and consistency with nginx, we rename it to nginx and change UID/GID to 1000/1000
-# Usually nginx user exists as well, so we do conditionally either create nginx or change apach to nginx
-RUN set -x \
-    && if id -u "nginx" > /dev/null; then \
-      find / -user apache -exec chown nginx {} \; >> /dev/null 2>&1 || true ; \
-      find / -group apache -exec chgrp nginx {} \; >> /dev/null 2>&1 || true ; \
-      usermod -d /var/www nginx ; \
-    else \
-      usermod -d /var/www -c nginx -l nginx apache ; \
-      groupmod -n nginx apache ; \
-    fi \
-    && usermod -u 1000 nginx  > /dev/null \
-    && groupmod -g 1000 nginx  > /dev/null \
-    && chown nginx /var/run/php-fpm
-
 RUN set -ex \
     && cd /etc \
-    && mv php-fpm.d/www.conf php-fpm.d/www.conf.default \
-    && sed 's! apache! nginx!g' php-fpm.d/www.conf.default >> php-fpm.d/www.conf \
     && { \
         echo '[global]'; \
         echo 'error_log = /proc/self/fd/2'; \
@@ -69,8 +51,14 @@ RUN set -ex \
         echo; \
         echo '[www]'; \
         echo 'listen = 9000'; \
-    } | tee php-fpm.d/zz-docker.conf
+    } | tee php-fpm.d/zz-docker.conf \
+    && chown apache /var/run/php-fpm
 
+# Leave everything in working state
+USER apache
 WORKDIR /var/www/html
 
 CMD ["php-fpm", "-F"]
+
+# To share the volume with nginx via ContainerDefinitions:VolumesFrom:SourceContainer:php
+VOLUME ["/var/www/html"]
