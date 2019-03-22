@@ -59,6 +59,3 @@ USER apache
 WORKDIR /var/www/html
 
 CMD ["php-fpm", "-F"]
-
-# To share the volume with nginx via ContainerDefinitions:VolumesFrom:SourceContainer:php
-VOLUME ["/var/www/html"]
