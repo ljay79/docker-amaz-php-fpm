@@ -56,6 +56,7 @@ RUN set -ex \
 
 # Leave everything in working state
 USER apache
+
 WORKDIR /var/www/html
 
 CMD ["php-fpm", "-F"]
