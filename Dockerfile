@@ -1,38 +1,50 @@
-FROM amazonlinux:2018.03
+FROM amazonlinux:2
 
 # File Author / Maintainer
 MAINTAINER ljay
 
 # update amazon software repo
-RUN yum -y update && yum -y install shadow-utils
+RUN yum -y update && yum -y install shadow-utils procps \
+    && amazon-linux-extras install -y php7.2
 
 RUN set -ex; \
     \
     yum install -y openssl unzip zlib-devel git; \
-    yum install -y php56-cli php56-common php56-fpm php56-gd php56-gmp php56-intl \
-        php56-mbstring php56-mcrypt php56-mysqlnd php56-opcache php56-pdo php-pear \
-        php56-pecl-igbinary php56-pecl-jsonc php56-pecl-redis php56-process \
-        php56-soap php56-xml php56-xmlrpc \
+    yum install -y php-pecl-mcrypt php-gd php-gmp \
+    php-intl php-mbstring php-opcache php-pear php-pecl-igbinary \
+    php-pecl-redis php-soap php-xmlrpc \
     ;
 
 # Set UTC timezone
-RUN ln -snf /usr/share/zoneinfo/UTC /etc/localtime && echo UTC > /etc/timezone
+#RUN ln -snf /usr/share/zoneinfo/UTC /etc/localtime && echo UTC > /etc/timezone
 RUN printf '[PHP]\ndate.timezone = "%s"\n', UTC > /etc/php.d/tzone.ini \
     && "date"
 
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
-    && composer --version \
-    && chmod a+x /usr/local/bin/composer
+RUN set -eux; \
+    [ ! -d /var/www/html ]; \
+    mkdir -p /var/www/html; \
+    # allow running as an arbitrary user
+    groupadd -g 500 www-data; \
+    useradd -d /var/www/html -s /sbin/nologin -u 500 -g 500 www-data; \
+    chown -R www-data:www-data /var/www/html; \
+    chmod 0775 /var/www/html
 
-# docker container usually wont add that file which is required by some init scripts
-RUN echo "" >> /etc/sysconfig/network
+# update pecl channel definitions https://github.com/docker-library/php/issues/443
+RUN set -eux; \
+    \
+    pecl update-channels; \
+    # smoke test
+    php --version
 
-# cleanup
-RUN yum clean all && rm -rf /tmp/* /var/tmp/*
+COPY docker-php-entrypoint /usr/local/bin/
 
-RUN set -ex \
-    && cd /etc \
-    && { \
+ENTRYPOINT ["docker-php-entrypoint"]
+
+WORKDIR /var/www/html
+
+RUN set -eux; \
+    cd /etc; \
+    { \
         echo '[global]'; \
         echo 'error_log = /proc/self/fd/2'; \
         echo; \
@@ -44,19 +56,18 @@ RUN set -ex \
         echo; \
         echo '; Ensure worker stdout and stderr are sent to the main error log.'; \
         echo 'catch_workers_output = yes'; \
-    } | tee php-fpm.d/docker.conf \
-    && { \
+    } | tee php-fpm.d/docker.conf; \
+    { \
         echo '[global]'; \
         echo 'daemonize = no'; \
         echo; \
         echo '[www]'; \
         echo 'listen = 9000'; \
-    } | tee php-fpm.d/zz-docker.conf \
-    && chown apache /var/run/php-fpm
+    } | tee php-fpm.d/zz-docker.conf
 
-# Leave everything in working state
-USER apache
+# Override stop signal to stop process gracefully
+# https://github.com/php/php-src/blob/17baa87faddc2550def3ae7314236826bc1b1398/sapi/fpm/php-fpm.8.in#L163
+STOPSIGNAL SIGQUIT
 
-WORKDIR /var/www/html
-
-CMD ["php-fpm", "-F"]
+EXPOSE 9000
+CMD ["php-fpm"]
