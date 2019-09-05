@@ -43,6 +43,7 @@ ENTRYPOINT ["docker-php-entrypoint"]
 WORKDIR /var/www/html
 
 RUN set -eux; \
+    chmod +x /usr/local/bin/docker-php-entrypoint; \
     cd /etc; \
     { \
         echo '[global]'; \
