@@ -12,4 +12,4 @@ Version | Git branch | Tag name
 --------| ---------- |---------
 5.6.39  | master     | latest
 5.6.39  | master     | 5.6
-7.2.21  | 7.2        | 7.2
+7.2.24  | 7.2        | 7.2
