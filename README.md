@@ -10,6 +10,6 @@ This repo creates a Docker image for PHP-FPM running on Amazon Linux.
 
 Version | Git branch | Tag name
 --------| ---------- |---------
-5.6.39  | master     | latest
-5.6.39  | master     | 5.6
-7.2.24  | 7.2        | 7.2
+5.6.40  | master     | latest
+5.6.40  | master     | 5.6
+7.2.28  | 7.2        | 7.2
