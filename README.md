@@ -13,3 +13,5 @@ Version | Git branch | Tag name
 5.6.40  | master     | latest
 5.6.40  | master     | 5.6
 7.2.28  | 7.2        | 7.2
+
+Updated: 2020-06-26
